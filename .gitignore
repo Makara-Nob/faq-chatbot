@@ -25,6 +25,11 @@ wheels/
 .installed.cfg
 *.egg
 
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
 # IDE
 .vscode/
 .idea/
@@ -36,6 +41,10 @@ wheels/
 chroma_db/
 *.db
 *.sqlite
+
+# Uploaded documents - user data, never commit it
+storage/
+test_storage/
 
 # Logs
 *.log

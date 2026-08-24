@@ -1,0 +1,18 @@
+# Optional: the Claude + Chroma retrieval pipeline (USE_RAG=true).
+#
+# Kept out of requirements.txt on purpose. These pull in hundreds of megabytes
+# of ML dependencies, and the API runs fine on the keyword engine without them.
+# Install only when you want the LLM path:
+#
+#   pip install -r requirements-rag.txt
+#
+# Unpinned because the langchain ecosystem moves fast and the exact set depends
+# on your Python version. Pin them with `pip freeze` once yours works.
+
+-r requirements.txt
+
+langchain
+langchain-anthropic
+langchain-community
+langsmith
+chromadb

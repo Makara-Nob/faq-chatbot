@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Same task runner as dev.cmd, for Git Bash / WSL / macOS / Linux.
+#
+#   ./dev            start the API with auto-reload
+#   ./dev test       run the test suite
+#   ./dev admin ...  create or promote an admin
+#   ./dev demo       walk the whole auth flow
+#   ./dev install    install dependencies
+#   ./dev shell      python REPL with the app importable
+#
+# Works whether or not the venv is activated - it finds the venv python itself.
+
+set -euo pipefail
+
+cd "$(dirname "$0")"
+
+# Windows venvs put python in Scripts/, POSIX ones in bin/.
+if [ -x "venv/Scripts/python.exe" ]; then
+    PY="venv/Scripts/python.exe"
+elif [ -x "venv/bin/python" ]; then
+    PY="venv/bin/python"
+else
+    echo "[dev] No venv found. Create it with:  python -m venv venv" >&2
+    exit 1
+fi
+
+cmd="${1:-run}"
+shift || true          # "|| true" so it does not fail when there are no args
+
+case "$cmd" in
+    run|dev)
+        echo "[dev] http://127.0.0.1:8000/docs   (Ctrl+C to stop)"
+        exec "$PY" -m uvicorn app.main:app --reload "$@"
+        ;;
+    test)
+        exec "$PY" -m pytest -q "$@"
+        ;;
+    admin)
+        exec "$PY" scripts/create_admin.py "$@"
+        ;;
+    demo)
+        exec "$PY" scripts/demo_auth.py "$@"
+        ;;
+    install)
+        exec "$PY" -m pip install -r requirements.txt
+        ;;
+    shell)
+        exec "$PY"
+        ;;
+    *)
+        echo "[dev] Unknown command: $cmd" >&2
+        echo "[dev] Try: run | test | admin | demo | install | shell" >&2
+        exit 1
+        ;;
+esac

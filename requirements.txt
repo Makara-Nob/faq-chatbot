@@ -1,9 +1,36 @@
-langchain
-langchain-anthropic
-langchain-community
-langsmith
-python-dotenv==1.0.0
-chromadb
-fastapi
-uvicorn[standard]
-pydantic
+# Core dependencies - everything the API itself needs.
+# JAVA: this is your <dependencies> block.
+#
+# Versions are PINNED. Unpinned deps mean your build is not reproducible and a
+# transitive update can break production on a Tuesday. Regenerate with:
+#   pip freeze > requirements.txt
+#
+# The optional RAG stack lives in requirements-rag.txt so that a clone, a CI
+# run, and a docker build do not have to download hundreds of megabytes of ML
+# libraries to serve an API that works fine without them.
+
+# --- web layer -------------------------------------------------------------
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+pydantic==2.13.4
+pydantic-settings==2.15.0
+python-multipart==0.0.32        # required for multipart file uploads
+# email-validator               # only needed for pydantic's EmailStr. Login is
+#                               # by username, so this is deliberately absent.
+
+# --- auth ------------------------------------------------------------------
+PyJWT==2.13.0
+bcrypt==5.0.0
+
+# --- persistence -----------------------------------------------------------
+SQLAlchemy==2.0.52
+alembic==1.19.1
+# psycopg[binary]              # uncomment for PostgreSQL in production
+
+# --- config ----------------------------------------------------------------
+python-dotenv==1.2.3
+
+# --- tests -----------------------------------------------------------------
+pytest==9.1.1
+httpx==0.28.1                   # used by fastapi TestClient
+ruff==0.14.6                    # lint + format (Checkstyle + Spotless)

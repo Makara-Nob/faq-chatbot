@@ -3,13 +3,16 @@ LangSmith Evaluation for FAQ Chatbot
 Evaluates retrieval and generation quality
 """
 
-import os
-import json
-from dotenv import load_dotenv
-from langsmith import Client
-from langsmith.evaluation import evaluate
-from langsmith.schemas import Example
-from rag_pipeline import FAQChatbot
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from dotenv import load_dotenv  # noqa: E402
+from langsmith import Client  # noqa: E402
+from langsmith.evaluation import evaluate  # noqa: E402
+
+from app.services.rag_pipeline import FAQChatbot  # noqa: E402
 
 # Load environment variables
 load_dotenv()
@@ -26,7 +29,7 @@ def create_evaluation_dataset():
     
     # Create dataset
     try:
-        dataset = client.create_dataset(
+        client.create_dataset(
             dataset_name=dataset_name,
             description="Test cases for FAQ Chatbot evaluation"
         )
@@ -122,8 +125,6 @@ def run_evaluation(dataset_name: str):
         }
     
     # Run evaluation
-    client = Client()
-    
     try:
         results = evaluate(
             test_faq_chatbot,

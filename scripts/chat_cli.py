@@ -4,8 +4,14 @@ Run this to chat with the FAQ bot
 """
 
 import os
-from dotenv import load_dotenv
-from rag_pipeline import FAQChatbot
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from dotenv import load_dotenv  # noqa: E402
+
+from app.services.rag_pipeline import FAQChatbot  # noqa: E402
 
 # Load environment variables
 load_dotenv()
@@ -54,7 +60,7 @@ def main():
             
             # Show source documents
             if result['source_docs']:
-                print(f"\n📄 Source documents used:")
+                print("\n📄 Source documents used:")
                 for i, doc in enumerate(result['source_docs'], 1):
                     preview = doc[:100] + "..." if len(doc) > 100 else doc
                     print(f"   {i}. {preview}")

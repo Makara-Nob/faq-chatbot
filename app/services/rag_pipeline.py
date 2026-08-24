@@ -3,13 +3,13 @@ FAQ Chatbot RAG Pipeline
 Handles retrieval and generation with Claude
 """
 
-from langchain_anthropic import ChatAnthropic
-from langchain_openai import OpenAIEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
+import os
+
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
-import os
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_anthropic import ChatAnthropic
+from langchain_community.vectorstores import Chroma
 
 
 class FAQChatbot:
@@ -35,7 +35,7 @@ class FAQChatbot:
         """Load FAQ data from text file"""
         print(f"📁 Loading FAQs from: {file_path}")
         
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, encoding='utf-8') as f:
             faq_content = f.read()
         
         # Split FAQs into chunks
