@@ -1,0 +1,9 @@
+langchain
+langchain-anthropic
+langchain-community
+langsmith
+python-dotenv==1.0.0
+chromadb
+fastapi
+uvicorn[standard]
+pydantic

@@ -1,0 +1,23 @@
+Q: How do I reset my password?
+A: Go to Settings → Security → Click "Reset Password" → Check your email for reset link
+
+Q: What payment methods do you accept?
+A: We accept all major credit cards, PayPal, and bank transfers
+
+Q: How long does shipping take?
+A: Standard shipping takes 5-7 business days. Express shipping takes 2-3 business days
+
+Q: Can I return items?
+A: Yes, we offer 30-day returns on most items. Electronics have 14-day returns
+
+Q: What is your refund policy?
+A: Refunds are processed within 5-10 business days after we receive your return
+
+Q: Do you offer customer support?
+A: Yes, email support@example.com or call 1-800-XXX-XXXX. Hours: 9AM-5PM EST
+
+Q: How do I track my order?
+A: After shipping, you'll receive an email with a tracking number
+
+Q: What is your privacy policy?
+A: We protect your data. See our privacy policy at example.com/privacy
