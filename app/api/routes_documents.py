@@ -20,7 +20,6 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 
 READ_CHUNK = 64 * 1024      # 64 KB at a time
 
-
 async def read_limited(upload: UploadFile, max_bytes: int) -> bytes:
     """
     Read an upload without trusting its declared size.

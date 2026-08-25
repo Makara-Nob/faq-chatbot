@@ -8,9 +8,10 @@ signature. That one parameter is the whole authorization requirement.
 import time
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from app.core.deps import AdminUser, CurrentUser, DbSession
+from app.core.pagination import Page, PaginationParams, paginate
 from app.core.ratelimit import api_limiter
 from app.schemas.envelope import ApiResponse, ok
 from app.schemas.faq import AskRequest, AskResponse, FaqItem, FaqList
@@ -63,28 +64,18 @@ def ask(body: AskRequest, request: Request, user: CurrentUser, db: DbSession):
     return ok(payload, message)
 
 
-@router.get("/faqs", response_model=ApiResponse[FaqList])
+@router.get("/faqs", response_model=ApiResponse[Page])
 def list_faqs(
     user: CurrentUser,
+    params: PaginationParams = Depends(),  # Now has 'page' parameter
     search: Annotated[str | None, Query(max_length=100)] = None,
-    limit: Annotated[int, Query(ge=1, le=100)] = 20,
 ):
-    items = [
-        {"id": i, "question": q, "answer": a}
-        for i, (q, a) in enumerate(parse_faqs())
-    ]
-
+    items = [...]
     if search:
-        needle = search.lower()
-        items = [
-            it for it in items if needle in (it["question"] + it["answer"]).lower()
-        ]
-
-    return ok(
-        {"total": len(items), "items": items[:limit]},
-        f"{len(items)} FAQ(s) found",
-    )
-
+        items = [...]
+    
+    page = paginate(items, params)
+    return ok(page, f"{page.total} FAQ(s) found")
 
 @router.get("/faqs/{faq_id}", response_model=ApiResponse[FaqItem])
 def get_faq(faq_id: int, user: CurrentUser):

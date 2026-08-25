@@ -9,7 +9,7 @@ to unit test.
 import hashlib
 import secrets
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import timezone, datetime, timedelta
 from typing import Any
 
 import bcrypt
@@ -52,7 +52,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 # ---------------------------------------------------------------------------
 
 def _now() -> datetime:
-    return datetime.now(UTC)      # always UTC. never datetime.now().
+    return datetime.now(timezone.utc)      # always UTC. never datetime.now().
 
 
 def create_access_token(subject: str, role: str) -> str:

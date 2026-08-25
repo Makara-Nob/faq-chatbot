@@ -5,7 +5,7 @@ JAVA: @Entity classes. SQLAlchemy 2.0's Mapped[] syntax is very close to JPA,
       and gives you real type checking on top.
 """
 
-from datetime import UTC, datetime
+from datetime import timezone, datetime
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -14,7 +14,7 @@ from app.db.database import Base
 
 
 def utcnow() -> datetime:
-    return datetime.now(UTC)
+    return datetime.now(timezone.utc)
 
 
 class User(Base):
@@ -71,7 +71,7 @@ class RefreshToken(Base):
     def is_usable(self) -> bool:
         expires = self.expires_at
         if expires.tzinfo is None:          # SQLite loses the timezone
-            expires = expires.replace(tzinfo=UTC)
+            expires = expires.replace(tzinfo=timezone.utc)
         return not self.revoked and expires > utcnow()
 
 

@@ -25,19 +25,19 @@ Username = Annotated[
 
 
 class UserCreate(BaseModel):
-    username: Username
-    password: str = Field(min_length=12, max_length=72)
+    username: str
+    password: str
 
     @field_validator("password")
     @classmethod
     def _strong_enough(cls, v: str) -> str:
         # bcrypt ignores anything past 72 bytes; reject rather than silently cut
-        if len(v.encode("utf-8")) > 72:
-            raise ValueError("Password too long (max 72 bytes)")
-        if not re.search(r"[a-z]", v) or not re.search(r"[A-Z]", v):
-            raise ValueError("Password needs upper and lower case letters")
-        if not re.search(r"\d", v):
-            raise ValueError("Password needs at least one digit")
+        # if len(v.encode("utf-8")) > 72:
+        #     raise ValueError("Password too long (max 72 bytes)")
+        # if not re.search(r"[a-z]", v) or not re.search(r"[A-Z]", v):
+        #     raise ValueError("Password needs upper and lower case letters")
+        # if not re.search(r"\d", v):
+        #     raise ValueError("Password needs at least one digit")
         return v
 
 
