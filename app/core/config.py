@@ -25,6 +25,16 @@ class Settings(BaseSettings):
     env: Literal["dev", "staging", "prod"] = "dev"
     debug: bool = False
 
+    # --- logging -----------------------------------------------------------
+    # log_level : how chatty the logs are. DEBUG shows everything (noisy),
+    #             INFO is the normal production level, WARNING/ERROR quieter.
+    # log_json  : emit one JSON object per line so log tools (Datadog, Loki,
+    #             CloudWatch, ELK) can index every field. None = decide
+    #             automatically -> JSON in prod, human-readable elsewhere.
+    #             Set it to true/false in .env to force one or the other.
+    log_level: str = "INFO"
+    log_json: bool | None = None
+
     # --- security ----------------------------------------------------------
     # NEVER hardcode this. Generate with:
     #   python -c "import secrets; print(secrets.token_urlsafe(64))"
@@ -71,9 +81,25 @@ class Settings(BaseSettings):
             raise ValueError("SECRET_KEY must be set in production")
         return v
 
+    @field_validator("log_level")
+    @classmethod
+    def _normalise_log_level(cls, v: str) -> str:
+        # Accept any casing (info, Info, INFO) but store the canonical form the
+        # logging module expects, and fail loudly at startup on a typo.
+        level = v.upper()
+        allowed = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+        if level not in allowed:
+            raise ValueError(f"LOG_LEVEL must be one of {', '.join(sorted(allowed))}")
+        return level
+
     @property
     def is_prod(self) -> bool:
         return self.env == "prod"
+
+    @property
+    def log_as_json(self) -> bool:
+        """JSON logs in production by default; overridable via LOG_JSON."""
+        return self.is_prod if self.log_json is None else self.log_json
 
 
 @lru_cache

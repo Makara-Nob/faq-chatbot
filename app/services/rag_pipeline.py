@@ -3,6 +3,7 @@ FAQ Chatbot RAG Pipeline
 Handles retrieval and generation with Claude
 """
 
+import logging
 import os
 
 from langchain.chains import RetrievalQA
@@ -10,6 +11,12 @@ from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_anthropic import ChatAnthropic
 from langchain_community.vectorstores import Chroma
+
+# getLogger(__name__) gives a logger named "app.services.rag_pipeline", so its
+# output is tagged with where it came from and it inherits the app-wide config
+# set up in app/core/logging.py. No print() in library code: prints have no
+# level, no timestamp, no request id, and bypass your log tooling entirely.
+log = logging.getLogger(__name__)
 
 
 class FAQChatbot:
@@ -33,8 +40,10 @@ class FAQChatbot:
         
     def load_faq_data(self, file_path: str):
         """Load FAQ data from text file"""
-        print(f"📁 Loading FAQs from: {file_path}")
-        
+        # %s is a lazy placeholder: logging only builds the string if this level
+        # is actually enabled. Prefer this over f-strings in log calls.
+        log.info("loading FAQs from %s", file_path)
+
         with open(file_path, encoding='utf-8') as f:
             faq_content = f.read()
         
@@ -46,22 +55,22 @@ class FAQChatbot:
         )
         
         chunks = splitter.split_text(faq_content)
-        print(f"✂️  Split into {len(chunks)} chunks")
-        
+        log.info("split into %d chunks", len(chunks))
+
         return chunks
     
     def setup_vector_store(self, chunks: list):
         """Create vector store from FAQ chunks"""
-        print("🔢 Creating vector embeddings...")
-        
+        log.info("creating vector embeddings for %d chunks", len(chunks))
+
         # Use Chroma with default embeddings (no API key needed)
         self.vector_store = Chroma.from_texts(
             texts=chunks,
             persist_directory="./chroma_db",
             collection_name="faqs"
         )
-        
-        print("✅ Vector store created successfully")
+
+        log.info("vector store created")
         
         # Create retriever
         self.retriever = self.vector_store.as_retriever(
@@ -98,8 +107,8 @@ Answer: """
             return_source_documents=True,
             verbose=False
         )
-        
-        print("⚙️  QA chain configured")
+
+        log.info("QA chain configured")
     
     def answer_question(self, question: str) -> dict:
         """
@@ -123,22 +132,27 @@ Answer: """
     
     def initialize(self, faq_file: str):
         """Complete initialization pipeline"""
-        print("\n🚀 Starting FAQ Chatbot initialization...\n")
-        
+        log.info("starting FAQ chatbot initialization")
+
         # Load FAQs
         chunks = self.load_faq_data(faq_file)
-        
+
         # Setup vector store
         self.setup_vector_store(chunks)
-        
+
         # Setup QA chain
         self.setup_qa_chain()
-        
-        print("\n✅ FAQ Chatbot ready!\n")
+
+        log.info("FAQ chatbot ready")
 
 
 # Example usage
 if __name__ == "__main__":
+    # Only when run directly as a script (python -m app.services.rag_pipeline).
+    # When imported by the app, app/core/logging.py has already configured
+    # logging, so we must NOT reconfigure it there - only here.
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+
     # Initialize chatbot
     chatbot = FAQChatbot()
     chatbot.initialize("data/faqs.txt")

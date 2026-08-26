@@ -22,6 +22,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api import routes_auth, routes_documents, routes_faq
 from app.core.config import get_settings
+from app.core.logging import setup_logging
 from app.db.database import Base, SessionLocal
 from app.db.database import engine as db_engine
 from app.schemas.auth import UserCreate
@@ -29,14 +30,13 @@ from app.schemas.envelope import ApiResponse, ErrorResponse, ok
 from app.schemas.faq import HealthResponse
 from app.services.faq_engine import build_engine
 from app.services.user_service import ensure_admin
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
-)
-log = logging.getLogger("faq-api")
+from app.util.constant import DEFAULT_ERROR_CODE, STATUS_TO_ERROR_CODE
 
 settings = get_settings()
+
+# Configure logging ONCE, before anything logs. See app/core/logging.py.
+setup_logging(settings)
+log = logging.getLogger("faq-api")
 
 
 def seed_admin_from_settings() -> None:
@@ -151,14 +151,25 @@ async def request_context(request: Request, call_next):
     try:
         response = await call_next(request)
     except Exception:
+        # The global exception handler below logs the full traceback exactly
+        # once. Here we only record the access-log line for the failed request
+        # (so its timing is captured) WITHOUT a second traceback.
         elapsed = (time.perf_counter() - started) * 1000
-        log.exception("request_id=%s %s %s failed after %.1fms",
-                      request_id, request.method, request.url.path, elapsed)
+        log.error("request_id=%s %s %s -> 500 %.1fms",
+                  request_id, request.method, request.url.path, elapsed,
+                  extra={"request_id": request_id, "status": 500,
+                         "latency_ms": round(elapsed, 1)})
         raise
 
     elapsed = (time.perf_counter() - started) * 1000
-    log.info("request_id=%s %s %s -> %d %.1fms", request_id, request.method,
-             request.url.path, response.status_code, elapsed)
+    # Health checks are hit every few seconds by load balancers / k8s probes.
+    # Log them at DEBUG so they don't drown out real traffic at INFO. The extra
+    # fields become real, queryable columns in the JSON (production) logs.
+    access_level = logging.DEBUG if request.url.path == "/health" else logging.INFO
+    log.log(access_level, "request_id=%s %s %s -> %d %.1fms", request_id,
+            request.method, request.url.path, response.status_code, elapsed,
+            extra={"request_id": request_id, "status": response.status_code,
+                   "latency_ms": round(elapsed, 1)})
 
     response.headers["X-Request-ID"] = request_id
     response.headers["X-Process-Time-Ms"] = f"{elapsed:.1f}"
@@ -182,25 +193,10 @@ async def request_context(request: Request, call_next):
 # {"detail": ...} and the client would need a second code path.
 # ---------------------------------------------------------------------------
 
-_ERROR_CODES = {
-    400: "bad_request",
-    401: "unauthorized",
-    403: "forbidden",
-    404: "not_found",
-    409: "conflict",
-    413: "file_too_large",
-    415: "unsupported_media_type",
-    422: "validation_error",
-    429: "rate_limited",
-    500: "internal_error",
-    503: "service_unavailable",
-}
-
-
 def _fail(request: Request, code: int, message: str, **extra) -> JSONResponse:
     body = ErrorResponse(
         message=message,
-        error={"code": _ERROR_CODES.get(code, "error"), **extra},
+        error={"code": STATUS_TO_ERROR_CODE.get(code, DEFAULT_ERROR_CODE), **extra},
         request_id=getattr(request.state, "request_id", None),
     )
     return JSONResponse(status_code=code, content=body.model_dump())
@@ -243,7 +239,9 @@ async def validation_error(request: Request, exc: RequestValidationError):
 
 @app.exception_handler(FileNotFoundError)
 async def missing_data(request: Request, exc: FileNotFoundError):
-    log.error("data file missing: %s", exc)
+    request_id = getattr(request.state, "request_id", "unknown")
+    log.error("request_id=%s data file missing: %s", request_id, exc,
+              extra={"request_id": request_id})
     return _fail(request, 503, "FAQ data is unavailable")
 
 
@@ -253,8 +251,9 @@ async def unhandled_exception(request: Request, exc: Exception):
     The single most important production rule in this file:
     NEVER return a stack trace to the client. Log the detail, return an id.
     """
-    log.exception("request_id=%s unhandled error",
-                  getattr(request.state, "request_id", "unknown"))
+    request_id = getattr(request.state, "request_id", "unknown")
+    log.exception("request_id=%s unhandled error", request_id,
+                  extra={"request_id": request_id})
 
     return _fail(
         request, 500, "Something went wrong. Quote the request_id to support."
